@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% set recipe = form.entity %}
+
+{% block main %}
+    <h1>{{ 'Create' if form.create_form else 'Edit' }} recipe</h1>
+
+    <form method="post">
+        <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+
+        {% if form.errors %}
+            <ul>
+                {% for error in form.errors %}
+                    <li class="text-danger">{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <div class="mb-3">
+            <label for="category_id" class="form-label">Category</label>
+            <select name="category_id" class="form-control" id="category_id" aria-describedby="category_id" required>
+                {% for category in find_all_categories() %}
+                    <option value="{{ category.id }}"{{ ' selected' if recipe.category_id == category.id else '' }}>
+                        {{ category.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input name="name"
+                   type="text"
+                   class="form-control"
+                   id="name"
+                   value="{{ recipe.name }}"
+                   aria-describedby="name"
+                   required>
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea name="description"
+                      class="form-control"
+                      id="description"
+                      aria-describedby="description">{{ recipe.description }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="difficulty" class="form-label">Difficulty</label>
+            <select name="difficulty" class="form-control" id="difficulty" aria-describedby="difficulty" required>
+                <option value="1"{{ ' selected' if recipe.difficulty == 1 else '' }}>
+                    ★☆☆☆☆ (Very easy)
+                </option>
+                <option value="2"{{ ' selected' if recipe.difficulty == 2 else '' }}>
+                    ★★☆☆☆ (Easy)
+                </option>
+                <option value="3"{{ ' selected' if recipe.difficulty == 3 else '' }}>
+                    ★★★☆☆ (Medium)
+                </option>
+                <option value="4"{{ ' selected' if recipe.difficulty == 4 else '' }}>
+                    ★★★★☆ (Difficult)
+                </option>
+                <option value="5"{{ ' selected' if recipe.difficulty == 5 else '' }}>
+                    ★★★★★ (Very difficult)
+                </option>
+            </select>
+        </div>
+
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                {% if form.create_form %}
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Create recipe?')">
+                        Create
+                    </button>
+                {% else %}
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Save recipe?')">
+                        Save
+                    </button>
+                {% endif %}
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('recipes.list_all') }}" class="btn btn-secondary">Close</a>
+            </div>
+        </div>
+    </form>
+
+    {% if not form.create_form %}
+        <h2>Ingredients</h2>
+
+        {% include 'recipes/_ingredients.html' %}
+
+        <h2>Images</h2>
+
+        <div class="row">
+            {% for image in recipe.images %}
+                <div class="col-lg-4 text-center">
+                    <a href="{{ url_for('recipes.download_image', recipe_id=recipe.id, image_id=image.id) }}"
+                       target="_blank">
+                        <img src="{{ url_for('recipes.download_image', recipe_id=recipe.id, image_id=image.id) }}"
+                             alt="{{ image.filename }}"
+                             width="320"
+                             class="img-thumbnail">
+                    </a>
+                    <br>
+                    <form method="post"
+                          action="{{ url_for('recipes.delete_image', recipe_id=recipe.id, image_id=image.id) }}">
+                        <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete image?')">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('recipes.upload_image', recipe_id=recipe.id) }}"
+              method="post"
+              enctype="multipart/form-data">
+            <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+                <label for="file" class="form-label">Image</label>
+                <input name="file"
+                       type="file"
+                       accept="image/png, image/gif, image/jpeg"
+                       class="form-control"
+                       id="file"
+                       aria-describedby="file"
+                       required>
+            </div>
+
+            <div class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Upload image?')">
+                        Upload
+                    </button>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

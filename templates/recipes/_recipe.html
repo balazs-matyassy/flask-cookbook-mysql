@@ -1,0 +1,52 @@
+<div class="mb-3">
+    <label for="category_id" class="form-label">Category</label>
+    <select class="form-control" id="category_id" aria-describedby="category_id" disabled>
+        <option selected>
+            {{ recipe.category.name }}
+        </option>
+    </select>
+</div>
+
+<div class="mb-3">
+    <label for="name" class="form-label">Name</label>
+    <input type="text"
+           class="form-control"
+           id="name"
+           value="{{ recipe.name }}"
+           aria-describedby="name"
+           disabled>
+</div>
+
+<div class="mb-3">
+    <label for="description" class="form-label">Description</label>
+    <textarea class="form-control"
+              id="description"
+              aria-describedby="description" disabled>{{ recipe.description }}</textarea>
+</div>
+
+<div class="mb-3">
+    <label for="difficulty" class="form-label">Difficulty</label>
+    <select class="form-control" id="difficulty" aria-describedby="difficulty" disabled>
+        {% if recipe.difficulty == 1 %}
+            <option selected>
+                ★☆☆☆☆ (Very easy)
+            </option>
+        {% elif recipe.difficulty == 2 %}
+            <option selected>
+                ★★☆☆☆ (Easy)
+            </option>
+        {% elif recipe.difficulty == 3 %}
+            <option selected>
+                ★★★☆☆ (Medium)
+            </option>
+        {% elif recipe.difficulty == 4 %}
+            <option selected>
+                ★★★★☆ (Difficult)
+            </option>
+        {% elif recipe.difficulty == 5 %}
+            <option selected>
+                ★★★★★ (Very difficult)
+            </option>
+        {% endif %}
+    </select>
+</div>

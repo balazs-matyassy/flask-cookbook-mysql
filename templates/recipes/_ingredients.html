@@ -1,0 +1,56 @@
+<table class="table">
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Quantity</th>
+        <th>Unit</th>
+        <th colspan="2"></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for recipe_ingredient in recipe.ingredients %}
+        <tr class="{{ 'table-primary' if ingredient and recipe_ingredient.id == ingredient.id else '' }}">
+            <td>{{ recipe_ingredient.name }}</td>
+            <td>{{ recipe_ingredient.quantity }}</td>
+            <td>{{ recipe_ingredient.unit }}</td>
+            <td>
+                <a href="{{ url_for('recipes.edit_ingredient', recipe_id=recipe.id, ingredient_id=recipe_ingredient.id) }}"
+                   class="btn btn-primary">
+                    Edit
+                </a>
+            </td>
+            <td>
+                {% if redirect_to %}
+                    <form method="post"
+                          action="{{ url_for('recipes.delete_ingredient'
+                            , recipe_id=recipe.id, ingredient_id=recipe_ingredient.id, redirect_to=redirect_to) }}">
+                        <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete ingredient?')">
+                            Delete
+                        </button>
+                    </form>
+                {% else %}
+                    <form method="post"
+                          action="{{ url_for('recipes.delete_ingredient'
+                            , recipe_id=recipe.id, ingredient_id=recipe_ingredient.id) }}">
+                        <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete ingredient?')">
+                            Delete
+                        </button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% if not form.create_form %}
+    <div>
+        <a href="{{ url_for('recipes.create_ingredient', recipe_id=recipe.id) }}" class="btn btn-primary">
+            Create ingredient
+        </a>
+    </div>
+{% endif %}

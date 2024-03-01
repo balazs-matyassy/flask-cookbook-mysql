@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% set category = form.entity %}
+
+{% block main %}
+    <h1>{{ 'Create' if form.create_form else 'Edit' }} category</h1>
+
+    <form method="post">
+        <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+
+        {% if form.errors %}
+            <ul>
+                {% for error in form.errors %}
+                    <li class="text-danger">{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input name="name"
+                   type="text"
+                   class="form-control"
+                   id="name"
+                   value="{{ category.name }}"
+                   aria-describedby="name"
+                   required>
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea name="description"
+                      class="form-control"
+                      id="description"
+                      aria-describedby="description">{{ category.description }}</textarea>
+        </div>
+
+
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                {% if form.create_form %}
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Create category?')">
+                        Create
+                    </button>
+                {% else %}
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Save category?')">
+                        Save
+                    </button>
+                {% endif %}
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('categories.list_all') }}" class="btn btn-secondary">Close</a>
+            </div>
+        </div>
+    </form>
+{% endblock %}

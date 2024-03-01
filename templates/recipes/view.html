@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block main %}
+    <h1>{{ recipe.name }}</h1>
+
+    {% include 'recipes/_recipe.html' %}
+
+    {% set ingredients = recipe.ingredients %}
+
+    {% if ingredients %}
+        <h2>Ingredients</h2>
+
+        <ul>
+            {% for ingredient in ingredients %}
+                <li>
+                    {{ ingredient.quantity if ingredient.quantity else '' }}
+                    {{ ingredient.unit }}
+                    {{ ingredient.name }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% set images = recipe.images %}
+
+    {% if images %}
+        <h2>Images</h2>
+
+        <div class="row">
+            {% for image in images %}
+                <div class="col-lg-4 text-center">
+                    <a href="{{ url_for('recipes.download_image', recipe_id=recipe.id, image_id=image.id) }}"
+                       target="_blank">
+                        <img src="{{ url_for('recipes.download_image', recipe_id=recipe.id, image_id=image.id) }}"
+                             alt="{{ image.filename }}"
+                             width="320"
+                             class="img-thumbnail">
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="row g-3 align-items-center">
+        <div class="col-auto">
+            <a href="{{ url_for('recipes.list_all') }}" class="btn btn-secondary">Close</a>
+        </div>
+    </div>
+{% endblock %}

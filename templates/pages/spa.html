@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flask Cookbook - SPA</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/blog.css" rel="stylesheet">
+    <script src="/static/js/bootstrap.bundle.min.js" defer></script>
+    <script src="/static/js/alpine.3.13.5.js" defer></script>
+</head>
+<body
+        x-data="{
+            csrfToken: null,
+            categories: {},
+            defaultCategory: null,
+            recipes: [],
+            searchTerm: '',
+            formVisible: false,
+
+            async fetchCsrfToken() {
+                try {
+                    const payload = await (await fetch('/api/security/csrf_token')).json();
+                    this.csrfToken = payload.csrf_token;
+                } catch (error) {
+                    $dispatch('print-message', error);
+                }
+            },
+
+            async fetchCategories() {
+                try {
+                    const payload = await (await fetch('/api/categories')).json();
+                    this.categories = {};
+                    payload.items.forEach(category => this.categories[category.id] = category);
+                    this.defaultCategory = payload.items.length > 0
+                        ? payload.items[0]
+                        : null;
+                } catch (error) {
+                    $dispatch('print-message', error);
+                }
+            },
+
+            async fetchRecipes(searchTerm) {
+                try {
+                    if (typeof searchTerm === 'string') {
+                        this.searchTerm = searchTerm;
+                    }
+
+                    const url = (this.searchTerm !== '')
+                        ? `/api/recipes?search=${encodeURIComponent(this.searchTerm)}`
+                        : '/api/recipes';
+                    const payload = (await (await fetch(url)).json());
+
+                    this.recipes = payload.items;
+                } catch (error) {
+                    $dispatch('print-message', error);
+                }
+            },
+
+            async saveRecipe(recipe) {
+                try {
+                    if (recipe.id === null) {
+                        const payload = await (await fetch('/api/recipes', {
+                            'method': 'POST',
+                            'headers': {
+                              'Content-Type': 'application/json'
+                            },
+                            'body': JSON.stringify({csrf_token: this.csrfToken, ...recipe})
+                        })).json();
+                        recipe.id = payload.id;
+
+                        this.formVisible = false;
+                        $dispatch('print-message', 'Recipe created.');
+                    } else {
+                        const url = `/api/recipes/${encodeURIComponent(recipe.id)}`;
+                        await fetch(url, {
+                            'method': 'PUT',
+                            'headers': {
+                              'Content-Type': 'application/json'
+                            },
+                            'body': JSON.stringify({csrf_token: this.csrfToken, ...recipe})
+                        });
+
+                        $dispatch('print-message', 'Recipe saved.');
+                    }
+
+                    const url = (this.searchTerm !== '')
+                        ? `/api/recipes?search=${encodeURIComponent(this.searchTerm)}`
+                        : '/api/recipes';
+                    const payload = (await (await fetch(url)).json());
+
+                    this.recipes = payload.items;
+                } catch (error) {
+                    $dispatch('print-message', error);
+                }
+            },
+
+            async deleteRecipe(recipe) {
+                try {
+                    let url = `/api/recipes/${encodeURIComponent(recipe.id)}`;
+                    await fetch(url, {
+                        'method': 'DELETE',
+                        'headers': {
+                          'Content-Type': 'application/json'
+                        },
+                        'body': JSON.stringify({csrf_token: this.csrfToken})
+                    });
+
+                    this.formVisible = false;
+                    $dispatch('print-message', 'Recipe deleted.');
+
+                    url = (this.searchTerm !== '')
+                        ? `/api/recipes?search=${encodeURIComponent(this.searchTerm)}`
+                        : '/api/recipes';
+                    const payload = (await (await fetch(url)).json());
+
+                    this.recipes = payload.items;
+                } catch (error) {
+                    $dispatch('print-message', error);
+                }
+            }
+        }"
+        x-init="
+            await fetchCsrfToken();
+            await fetchCategories();
+            await fetchRecipes();
+        "
+        @search-recipes.window="
+            await fetchRecipes($event.detail);
+        "
+        @view-recipe.window="formVisible = true"
+        @edit-recipe.window="formVisible = true"
+        @delete-recipe.window="
+            await deleteRecipe($event.detail);
+        "
+        @save-recipe.window="
+            await saveRecipe($event.detail);
+        "
+        @close-recipe.window="formVisible = false"
+        @create-recipe.window="formVisible = true"
+>
+
+<div class="container">
+    <header class="border-bottom lh-1 py-3">
+        <div class="row flex-nowrap justify-content-between align-items-center">
+            <div class="col"></div>
+            <div class="col text-center">
+                <a class="blog-header-logo text-body-emphasis text-decoration-none" href="#">
+                    Flask Cookbook - SPA
+                </a>
+            </div>
+            <div class="col text-end">
+                <!-- SEARCH FORM COMPONENT -->
+                <div x-data>
+                    <label for="search">Search</label>
+                    <input type="text" id="search" @input="$dispatch('search-recipes', $event.target.value)">
+                </div>
+                <!-- END OF SEARCH FORM COMPONENT -->
+            </div>
+        </div>
+    </header>
+
+    <div class="nav-scroller py-1 mb-3 border-bottom">
+        <nav class="nav nav-underline">
+            <a class="nav-item nav-link link-body-emphasis" href="/">
+                Home
+            </a>
+        </nav>
+    </div>
+</div>
+
+<main class="container">
+    <!-- MESSAGES COMPONENT -->
+    <div id="messages"
+         x-data="{
+            messages: [],
+
+            printMessage(value) {
+                if (this.messages.length >= 3) {
+                    this.messages = this.messages.slice(0, 2);
+                }
+
+                this.messages.unshift({
+                    'value': value,
+                    'timestamp': (new Date()).toLocaleTimeString()
+                });
+            },
+
+            clearMessages() {
+                this.messages = [];
+            }
+         }"
+         @print-message.window="printMessage($event.detail)"
+         @clear-messages.window="clearMessages()"
+    >
+        <template x-for="message in messages">
+            <div class="alert alert-primary" role="alert">
+                <span x-text="message.value"></span>
+                <br>
+                <small x-text="message.timestamp"></small>
+            </div>
+        </template>
+    </div>
+    <!-- END OF MESSAGES COMPONENT -->
+
+    <div class="row g-5">
+        <!-- RECIPE FORM COMPONENT -->
+        <div class="col-lg-6"
+             x-show="formVisible"
+             x-data="{
+                action: null,
+                recipe: {
+                    id: null,
+                    category_id: null,
+                    name: '',
+                    description: '',
+                    difficulty: 1
+                },
+
+                createRecipe() {
+                    this.action = 'Create';
+                    this.recipe = {
+                        id: null,
+                        category_id: this.defaultCategory.id,
+                        name: '',
+                        description: '',
+                        difficulty: 1
+                    };
+                },
+
+                viewRecipe(recipe) {
+                    this.action = 'View';
+                    this.recipe = {...recipe};
+                },
+
+                editRecipe(recipe) {
+                    this.action = 'Edit';
+                    this.recipe = {...recipe};
+                },
+
+                saveRecipe() {
+                    if (this.recipe.name.trim() === '') {
+                        alert('Name missing.');
+                    } else if (confirm(`${this.action === 'Create' ? 'Create' : 'Save'} recipe?`)) {
+                        $dispatch('save-recipe', {...this.recipe});
+                    }
+                }
+             }"
+             @view-recipe.window="viewRecipe($event.detail)"
+             @edit-recipe.window="editRecipe($event.detail)"
+             @create-recipe.window="createRecipe()"
+        >
+            <h1>
+                <span x-text="action"></span>
+                recipe
+            </h1>
+
+            <div class="mb-3">
+                <label for="category" class="form-label">Category</label>
+                <select class="form-control"
+                        id="category"
+                        aria-describedby="category"
+                        x-model="recipe.category_id"
+                        :disabled="action === 'View'">
+                    <template x-for="category in categories">
+                        <option :value="category.id" x-text="category.name"></option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="name" class="form-label">Name</label>
+                <input type="text"
+                       class="form-control"
+                       id="name"
+                       aria-describedby="name"
+                       x-model="recipe.name"
+                       :disabled="action === 'View'">
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea name="description"
+                          class="form-control"
+                          id="description"
+                          aria-describedby="description"
+                          x-model="recipe.description"
+                          :disabled="action === 'View'"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="difficulty" class="form-label">Difficulty</label>
+                <select class="form-control"
+                        id="difficulty"
+                        aria-describedby="difficulty"
+                        x-model="recipe.difficulty"
+                        :disabled="action === 'View'">
+                    <option value="1">
+                        ★☆☆☆☆
+                    </option>
+                    <option value="2">
+                        ★★☆☆☆
+                    </option>
+                    <option value="3">
+                        ★★★☆☆
+                    </option>
+                    <option value="4">
+                        ★★★★☆
+                    </option>
+                    <option value="5">
+                        ★★★★★
+                    </option>
+                </select>
+            </div>
+
+            <div class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <template x-if="action !== 'View'">
+                        <button type="button"
+                                class="btn btn-primary"
+                                x-text="action === 'Edit' ? 'Save' : 'Create'"
+                                @click="saveRecipe()"></button>
+                    </template>
+                </div>
+                <div class="col-auto">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            @click="$dispatch('close-recipe')">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- END OF RECIPE FORM COMPONENT -->
+
+        <!-- RECIPES LIST COMPONENT -->
+        <div :class="formVisible ? 'col-lg-6' : 'col'" x-data>
+            <h1>Recipes</h1>
+
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Name</th>
+                    <th>Difficulty</th>
+                    <th colspan="3"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <template x-for="recipe in recipes">
+                    <tr>
+                        <td x-text="categories[recipe.category_id].name"></td>
+                        <td x-text="recipe.name"></td>
+                        <td x-text="'★'.repeat(recipe.difficulty) + '☆'.repeat(5 - recipe.difficulty)"></td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-secondary"
+                                    @click="$dispatch('view-recipe', recipe)">
+                                View
+                            </button>
+                        </td>
+                        <td>
+                            <template x-if="recipe.write_access">
+                                <button type="button"
+                                        class="btn btn-primary"
+                                        @click="$dispatch('edit-recipe', recipe)">
+                                    Edit
+                                </button>
+                            </template>
+                        </td>
+                        <td>
+                            <template x-if="recipe.write_access">
+                                <button type="button"
+                                        class="btn btn-danger"
+                                        @click="
+                                        if (confirm('Delete recipe?')) {
+                                            $dispatch('delete-recipe', recipe);
+                                        }
+                                    "
+                                >
+                                    Delete
+                                </button>
+                            </template>
+                        </td>
+                    </tr>
+                </template>
+                </tbody>
+            </table>
+
+            <template x-if="!formVisible">
+                <div>
+                    <button class="btn btn-primary" @click="$dispatch('create-recipe')">
+                        Create recipe
+                    </button>
+                </div>
+            </template>
+        </div>
+        <!-- END OF RECIPES LIST COMPONENT -->
+    </div>
+
+</main>
+
+<footer class="py-5 text-center text-body-secondary bg-body-tertiary">
+    <p>
+        Flask Cookbook - SPA
+    </p>
+    <p class="mb-0">
+        <a href="#">Back to top</a>
+    </p>
+</footer>
+
+</body>
+</html>

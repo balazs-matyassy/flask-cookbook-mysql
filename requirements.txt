@@ -1,0 +1,5 @@
+flask==3.0.2
+werkzeug~=3.0.1
+python-dotenv==1.0.1
+click~=8.1.7
+pymysql~=1.1.0

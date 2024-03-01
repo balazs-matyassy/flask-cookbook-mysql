@@ -1,0 +1,62 @@
+{% extends 'base_search.html' %}
+
+{% block search %}
+    <form>
+        <div class="row">
+            <div class="col-auto">
+                <input name="search" type="text" class="form-control" id="search"
+                       value="{{ request.args.get('search', '') }}">
+            </div>
+            <div class="col-auto">
+                <label for="search">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </label>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+
+{% block main %}
+    <h1>Categories</h1>
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th colspan="3"></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for category in categories %}
+            <tr>
+                <td>{{ category.name }}</td>
+                <td>
+                    <a href="{{ url_for('categories.view', category_id=category.id) }}" class="btn btn-secondary">
+                        View
+                    </a>
+                </td>
+                <td>
+                    <a href="{{ url_for('categories.edit', category_id=category.id) }}" class="btn btn-primary">
+                        Edit
+                    </a>
+                </td>
+                <td>
+                    <form method="post" action="{{ url_for('categories.delete', category_id=category.id) }}">
+                        <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete category?')">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div>
+        <a href="{{ url_for('categories.create') }}" class="btn btn-primary">
+            Create category
+        </a>
+    </div>
+{% endblock %}
